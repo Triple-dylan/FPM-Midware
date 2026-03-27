@@ -1,0 +1,61 @@
+Field Name,Object,Folder,Unique Key,Created On
+Consent Check Box,Contact,Form | Contact Us,{{ contact.i_agree_to_terms_conditions_and_privacy_policy_provided_by_the_company_by_providing_my_phone_number_i_agree_to_receive_text_messages_from_the_business }},3/5/2025 at 6:55 AM
+Company Name,Company,Company Info,{{ business.name }},3/5/2025 at 7:52 AM
+Phone,Company,Company Info,{{ business.phone }},3/5/2025 at 7:52 AM
+Email,Company,Company Info,{{ business.email }},3/5/2025 at 7:52 AM
+Website,Company,Company Info,{{ business.website }},3/5/2025 at 7:52 AM
+Address,Company,Company Info,{{ business.address }},3/5/2025 at 7:52 AM
+State,Company,Company Info,{{ business.state }},3/5/2025 at 7:52 AM
+City,Company,Company Info,{{ business.city }},3/5/2025 at 7:52 AM
+Description,Company,Company Info,{{ business.description }},3/5/2025 at 7:52 AM
+Postal Code,Company,Company Info,{{ business.postalcode }},3/5/2025 at 7:52 AM
+Country,Company,Company Info,{{ business.country }},3/5/2025 at 7:52 AM
+CRE: Type of Client,Contact,Commercial,{{ contact.cre_type_of_client }},12/5/2024 at 3:07 PM
+Lifetime Value,Contact,Transaction History,{{ contact.lifetime_value }},3/7/2025 at 9:58 AM
+Last Order Amount,Contact,Transaction History,{{ contact.last_order_amount }},3/7/2025 at 9:59 AM
+Average Order Value,Contact,Transaction History,{{ contact.average_order_value }},7/13/2025 at 4:44 PM
+Last Shoot Date,Contact,Transaction History,{{ contact.last_shoot_date }},7/13/2025 at 4:45 PM
+1st Shoot Appointment Date,Contact,Transaction History,{{ contact.1st_shoot_appointment_date }},7/13/2025 at 4:50 PM
+2nd Shoot Appointment Date,Contact,Transaction History,{{ contact.2nd_shoot_appointment_date }},7/13/2025 at 4:50 PM
+3rd Shoot Appointment Date,Contact,Transaction History,{{ contact.3rd_shoot_appointment_date }},7/13/2025 at 4:50 PM
+Last Order Placed,Contact,Transaction History,{{ contact.last_order_placed }},7/31/2025 at 4:39 PM
+Previous Media Company,Contact,Additional Info,{{ contact.previous_media_company }},12/5/2024 at 2:42 PM
+Date Of Birth,Contact,Additional Info,{{ contact.date_of_birth }},11/25/2024 at 4:50 PM
+First Name,Contact,Contact,{{ contact.first_name }},11/25/2024 at 4:50 PM
+Last Name,Contact,Contact,{{ contact.last_name }},11/25/2024 at 4:50 PM
+Line of Business,Contact,Contact,{{ contact.line_of_business }},12/5/2024 at 3:10 PM
+Email,Contact,Contact,{{ contact.email }},11/25/2024 at 4:50 PM
+Phone,Contact,Contact,{{ contact.phone }},11/25/2024 at 4:50 PM
+Whale? 🐳,Contact,Contact,{{ contact.whale_ }},8/1/2025 at 4:17 PM
+Aryeo Customer Profile Link,Contact,Contact,{{ contact.aryeo_customer_profile_link }},7/17/2025 at 12:34 PM
+Customer Origin,Contact,Contact,{{ contact.customer_origin }},12/5/2024 at 2:25 PM
+Contact Source,Contact,Contact,{{ contact.source }},11/25/2024 at 4:50 PM
+Contact Type,Contact,Contact,{{ contact.type }},11/25/2024 at 4:50 PM
+Instagram Handle,Contact,Contact,{{ contact.instagram_handle }},12/5/2024 at 2:27 PM
+Business Name,Contact,Contact,{{ contact.business_name }},7/13/2025 at 4:36 PM
+Business Name,Contact,General Info,{{ contact.company_name }},11/25/2024 at 4:50 PM
+Street Address,Contact,General Info,{{ contact.address1 }},11/25/2024 at 4:50 PM
+City,Contact,General Info,{{ contact.city }},11/25/2024 at 4:50 PM
+FPM Location,Contact,General Info,{{ contact.fpm_location }},12/5/2024 at 2:28 PM
+Country,Contact,General Info,{{ contact.country }},11/25/2024 at 4:50 PM
+Notes,Contact,General Info,{{ contact.notes }},12/5/2024 at 2:30 PM
+State,Contact,General Info,{{ contact.state }},11/25/2024 at 4:50 PM
+Postal Code,Contact,General Info,{{ contact.postal_code }},11/25/2024 at 4:50 PM
+Website,Contact,General Info,{{ contact.website }},11/25/2024 at 4:50 PM
+Time Zone,Contact,General Info,{{ contact.timezone }},11/25/2024 at 4:50 PM
+RRE: License Number,Contact,Residential Real Estate,{{ contact.license_number }},11/26/2024 at 9:26 AM
+RRE: Brokerage,Contact,Residential Real Estate,{{ contact.rre_brokerage }},12/5/2024 at 2:46 PM
+RRE: Number of Annual Listings,Contact,Residential Real Estate,{{ contact.rre_number_of_annual_listings }},12/5/2024 at 2:46 PM
+RRE: Average Listing Price,Contact,Residential Real Estate,{{ contact.rre_average_listing_price }},12/5/2024 at 2:47 PM
+HB: Type of Builder,Contact,Home Builder,{{ contact.hb_type_of_builder }},12/5/2024 at 3:05 PM
+HB: Annual Total Homes Built,Contact,Home Builder,{{ contact.hb_annual_total_homes_built }},12/5/2024 at 3:06 PM
+HB: Annual Model Homes Built,Contact,Home Builder,{{ contact.hb_annual_model_homes_built }},12/5/2024 at 3:05 PM
+HB: Annual Homes Photographed,Contact,Home Builder,{{ contact.hb_annual_homes_photographed }},12/5/2024 at 3:06 PM
+Opportunity Name,Opportunity,Opportunity Details,{{ opportunity.name }},11/25/2024 at 4:50 PM
+Pipeline,Opportunity,Opportunity Details,{{ opportunity.pipeline_id }},11/25/2024 at 4:50 PM
+Stage,Opportunity,Opportunity Details,{{ opportunity.pipeline_stage_id }},11/25/2024 at 4:50 PM
+Status,Opportunity,Opportunity Details,{{ opportunity.status }},11/25/2024 at 4:50 PM
+Lead Value,Opportunity,Opportunity Details,{{ opportunity.monetary_value }},11/25/2024 at 4:50 PM
+Opportunity Owner,Opportunity,Opportunity Details,{{ opportunity.assigned_to }},11/25/2024 at 4:50 PM
+Opportunity Source,Opportunity,Opportunity Details,{{ opportunity.source }},11/25/2024 at 4:50 PM
+Lost Reason,Opportunity,Opportunity Details,{{ opportunity.lost_reason }},11/25/2024 at 4:50 PM

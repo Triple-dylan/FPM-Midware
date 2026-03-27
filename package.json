@@ -1,0 +1,36 @@
+{
+  "name": "fpm-datatool",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "verify": "npm run build && npm test",
+    "db:apply": "tsx scripts/apply-schema.ts",
+    "import:ghl-fields": "tsx scripts/import-ghl-field-map.ts",
+    "build:ghl-registry": "tsx scripts/build-ghl-contact-registry.ts",
+    "seed:ghl-fields": "tsx scripts/seed-ghl-field-map-from-registry.ts",
+    "ghl:refresh-fields": "tsx scripts/ghl-refresh-custom-field-ids.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "libphonenumber-js": "^1.12.40",
+    "pg": "^8.14.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/pg": "^8.11.11",
+    "csv-parse": "^6.2.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}

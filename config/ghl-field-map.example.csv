@@ -1,0 +1,4 @@
+map_key,ghl_custom_field_id,label,active,notes
+aryeo_last_order_identifier,,Last Aryeo order (identifier),false,Set ghl_custom_field_id from GHL custom field settings
+aryeo_last_order_status,,Last Aryeo order status,false,
+aryeo_last_payment_status,,Last Aryeo payment status,false,

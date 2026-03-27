@@ -1,0 +1,79 @@
+Testing Status,Field Name in GHL,Record,Contact: Folder (in GHL),GHL API Key,Definition,Field Name in Aryeo,Field Name in Zendesk Support,How often is this field updated? (Ben's team / middleware)
+,"Address
+(Street address, city, state, postal code)",Contact,Additional Information, contact.address1 ,Address of the business that the contact represents,Field does not exist in Aryeo,Field does not exist in Zendesk,
+,Aryeo Customer Profile Link,,Contact, contact.aryeo_customer_profile_link ,Link to Aryeo Customer profile. Open profile in a new tab when clicked.,This is just the generated Aryeo link,Aryeo Customer Profile Link,
+,Business Name,Contact,Contact, contact.business_name ,Name of the business that the contact represents or owns.,Field does not exist in Aryeo,Business Name,
+,CRE: Type of Client,Contact,Commercial, contact.cre_type_of_client ,"More specific type of customer/industry
+Dropdown:
+Pool Builder/Outdoor Living
+Interior Designer",Field does not exist in Aryeo,N/A,
+,Customer Origin,Contact,Contact, contact.customer_origin ,"This indicates the source that informed the contact of who FPM is. 
+Drop Down:
+Instagram (Organic)
+Facebook (Organic)
+Online Ad
+Friend/Colleague Referral
+Cold Call
+Office Event
+Online Search (Google)
+Brokerage Referral
+Unknown
+Ai/ChatGPT",Field does not exist in Aryeo,Customer Origin*,
+,Date Of Birth,Contact,Additional Information, contact.date_of_birth ,,Date Of Birth,Field does not exist in Zendesk,
+,Email,Contact,Contact, contact.email ,Main email for contact,Email address,Primary email,
+,First Name,Contact,Contact, contact.first_name ,First name of the contact,First name,Name,
+,FPM Location,Contact,General Info, contact.fpm_location ,"The FPM location that would servce this contact (Dallas, Austin, Houston, San Antonio)",Field does not exist in Aryeo,FPM Location*,
+,HB: Annual Homes Photographed,Contact,Homebuilder, contact.hb_annual_homes_photographed ,Number of homes that they photograph each year,Field does not exist in Aryeo,Field does not exist in Zendesk,
+,HB: Annual Model Homes Built,Contact,Homebuilder, contact.hb_annual_model_homes_built ,Number of model homes built each year,Field does not exist in Aryeo,Field does not exist in Zendesk,
+,HB: Annual Total Homes Built,Contact,Homebuilder, contact.hb_annual_total_homes_built ,Number of all homes built each year,Field does not exist in Aryeo,HB: Annual Total Homes Built*,
+,HB: Type of Builder,Contact,Homebuilder, contact.hb_type_of_builder ,"Production builders are high volume, lower price point
+
+Custom builders are lower volume, high price points (over $1million)
+
+Dropdown:
+Production
+Custom",Field does not exist in Aryeo,HB: Type of Builder*,
+,Instagram Handle,Contact,Contact, contact.instagram_handle ,Instagram handle (@handle),Instagram profile link,Instagram Handle,
+,Last Name,Contact,Contact, contact.last_name ,Last name of the contact,Last name,Name,
+,RRE: License Number,Contact,Residential Real Estate, contact.license_number ,Real estate license number,Agent MLS / License Number,RRE: License Number*,
+,Line of Business,Contact,Contact, contact.line_of_business ,"Drop down: 
+Residential Real Estate
+Home Builders & Architects
+Commercial
+AirBnb & VRBO
+Editor
+Spam
+Lead for out of scope services
+Other non qualified lead
+Operational
+Applicant",Field does not exist in Aryeo,Line of Business*,
+,Notes,Contact,General Info, contact.notes ,Additional notes about the contact that don't fit in any other fields.,Exists in Aryeo but should NOT be synced,Exists in Zendesk but should NOT be synced,
+,Phone Number,Contact,Contact, contact.phone ,Main contact number for contact,Phone number,Phone,
+,Previous Media Company,Contact,Additional Information, contact.previous_media_company ,The name of the provider that the contact was previously using,Field does not exist in Aryeo,Previous Media Company*,
+,RRE: Average Listing Price,Contact,Residential Real Estate, contact.rre_average_listing_price ,Average price of property that this contact lists,Field does not exist in Aryeo,RRE: Average Listing Price*,
+,RRE: Brokerage,Contact,Residential Real Estate, contact.rre_brokerage ,Brokerage that contact belongs to,Field does not exist in Aryeo,RRE: Brokerage*,
+,RRE: Number of Annual Listings,Contact,Residential Real Estate, contact.rre_number_of_annual_listings ,Number of properties listed each year,Field does not exist in Aryeo,RRE: Number of Annual Listings*,
+,Contact Source,Contact,Contact, contact.source ,"The source from which the contact was obtained. This is typically the source where many contacts were pulled then uploaded into GHL for cold outreach. If a contact enters GHL through Aryeo or Zendesk Support, concat source will remain blank.",Field does not exist in Aryeo,Field does not exist in Zendesk,
+,Timezone,Contact,Additional Information, contact.timezone ,Timezone that the contact coducts business in,Timezone,Time zone,
+,Contact Type,Contact,Contact, contact.type ,"Lead = Last order placed is ""Null""
+Customer = Last order placed is NOT ""Null""",Field does not exist in Aryeo,Field does not exist in Zendesk,
+,Website,Contact,General Info, contact.website ,The website for the company that the contact represents,Field does not exist in Aryeo,Website,
+,1st Shoot Appointment Date,Contact,Transaction History,contact.1st_shoot_appointment_date,"This is date of the 1st appointment with a status of ""Scheduled"".",This data comes from Aryeo shoot data.,Field does not exist in Zendesk,
+,2nd Shoot Appointment Date,Contact,Transaction History,contact.2nd_shoot_appointment_date,"This is date of the 2nd appointment with a status of ""Scheduled"".
+Note: We don't want the 1st, 2nd, and 3rd appointment to be from the same Order. So the 2nd shoot booked field should be the next shoot from a new order.",This data comes from Aryeo shoot data.,Field does not exist in Zendesk,
+,3rd Shoot Appointment Date,Contact,Transaction History,contact.3rd_shoot_appointment_date,"This is date of the 3rd appointment with a status of ""Scheduled"".
+Note: We don't want the 1st, 2nd, and 3rd appointment to be from the same Order. So the 2nd shoot booked field should be the next shoot from a new order.",This data comes from Aryeo shoot data.,Field does not exist in Zendesk,
+,"Average Order Value
+",Contact,Transaction History,contact.average_order_value,"LTV / the number of orders with an Order status of ""Open"" and Fulfillment Status of ""Fulfilled""",This data comes from Aryeo shoot data.,Field does not exist in Zendesk,
+,Last Order Placed,Contact,Transaction History,contact.last_order_placed ,The last order that was placed in Aryeo.,This data comes from Aryeo shoot data.,Field does not exist in Zendesk,
+,"Last Shoot Date 
+",Contact,Transaction History,contact.last_shoot_date,This is the date of the last appointment that the client had scheduled. Note: appointments that are postponed should not have a shoot date and therefore should not be considered for this field.,This data comes from Aryeo shoot data.,Field does not exist in Zendesk,
+,Life Time Value (LTV),Contact,Transaction History,contact.lifetime_value,"The sum of all past orders the client has placed that have an Order status of ""Open"" and Fulfillment Status of ""Fulfilled"". Any payment status.",This data comes from Aryeo shoot data.,Field does not exist in Zendesk,
+,Whale? 🐳,Contact,Contact,MOSES ADD NEW API KEY HERE,"""The contact is a whale if they sell 12 or more properties per year OR if their average listing price is $1million +
+
+Dropdown
+Yes
+No""","Whale?
+
+This is a custom field in Aryeo which is not available to be pulled via the Aryep API",Whale?*,
+,Sales Meeting Status,Contact,Additional Information,MOSES ADD NEW API KEY HERE,"If applicable, indicates if sales has had a meeting with this lead. Helps customer service reps understand if they need to try and book a sales meeting.",Field does not exist in Aryeo,Sales Meeting Status,
