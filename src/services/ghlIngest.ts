@@ -20,7 +20,7 @@ import {
   normalizeCompanyName,
   normalizeEmail,
   normalizePersonNamePart,
-  normalizePhoneE164,
+  normalizePhoneForGhl,
   parseIsoDateOnly,
   parseTimestamptz,
 } from "../lib/normalize.js";
@@ -50,7 +50,7 @@ export function ghlPayloadToLeadRow(p: Record<string, unknown>): GhlLeadInsert {
   const company =
     normalizeCompanyName(str(p.companyName)) ??
     normalizeCompanyName(str(p.businessName));
-  const phoneE164 = normalizePhoneE164(phoneRaw);
+  const phoneE164 = normalizePhoneForGhl(phoneRaw);
 
   return {
     first_name: normalizePersonNamePart(str(p.firstName)),

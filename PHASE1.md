@@ -10,10 +10,11 @@ This document captures **dedup/merge semantics** and the **GHL ↔ Zendesk Suppo
 | `src/config.ts` | Environment/config |
 | `src/db/pool.ts` | PostgreSQL pool + `SELECT 1` check |
 | `src/http/server.ts` | Minimal `http` server |
-| `scripts/apply-schema.ts` | Runs `schema/schema.sql` via local `psql` |
+| `scripts/apply-schema.ts` | Runs `schema/schema.sql` + `schema/migrations/*.sql` via `pg` (no `psql` binary required) |
+| `scripts/bootstrap-local-postgres.ts` | Local dev: create `DATABASE_URL` role + database via superuser (Homebrew Postgres) |
 | `vitest.config.ts` | Unit tests |
 
-Commands: `npm install`, `npm run dev`, `npm run build && npm start`, `npm test`, `DATABASE_URL=... npm run db:apply`.
+Commands: `npm install`, `npm run dev`, `npm run build && npm start`, `npm test`, `npm run db:local:bootstrap` (first time), `npm run db:apply`.
 
 ---
 

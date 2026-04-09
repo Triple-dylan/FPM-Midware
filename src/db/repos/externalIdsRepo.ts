@@ -3,11 +3,11 @@ import type { Pool, PoolClient } from "pg";
 type Db = Pool | PoolClient;
 
 export async function findLeadIdByExternalId(
-  client: PoolClient,
+  db: Db,
   system: string,
   externalId: string,
 ): Promise<string | null> {
-  const r = await client.query<{ lead_id: string }>(
+  const r = await db.query<{ lead_id: string }>(
     `select lead_id from lead_external_ids where system = $1 and external_id = $2`,
     [system, externalId],
   );

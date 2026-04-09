@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import http from "node:http";
 import type pg from "pg";
 import {
@@ -14,8 +15,13 @@ import {
 } from "../services/aryeoToGhlOutbound.js";
 import { ingestGhlContactPayload } from "../services/ghlIngest.js";
 import { ingestZendeskWebhook } from "../services/zendeskIngest.js";
+import { getDashboardSnapshot } from "../db/repos/dashboardRepo.js";
+import { listRecentMonitorOrders, listRecentMonitorSyncEvents } from "../db/repos/monitorRepo.js";
+import { verifyAryeoWebhookSignature } from "./aryeoWebhookSignature.js";
 import { automationAdminHtml } from "./adminHtml.js";
-import { BodyTooLargeError, readJsonBody } from "./readBody.js";
+import { DASHBOARD_POLL_MS } from "./dashboardHtml.js";
+import { liveMonitorHtml } from "./monitorHtml.js";
+import { BodyTooLargeError, parseJsonFromUtf8, readJsonBody, readUtf8Body } from "./readBody.js";
 
 export type HealthStatus = {
   ok: true;
@@ -46,6 +52,35 @@ function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x);
 }
 
+function readRequestId(req: http.IncomingMessage): string {
+  const h = req.headers["x-request-id"] ?? req.headers["x-correlation-id"];
+  const s = Array.isArray(h) ? h[0] : h;
+  const t = s?.trim();
+  if (t) return t.slice(0, 128);
+  return randomUUID();
+}
+
+function attachHttpRequestLog(req: http.IncomingMessage, res: http.ServerResponse, requestId: string): void {
+  const t0 = Date.now();
+  const method = req.method ?? "?";
+  const path = pathOnly(req.url ?? "");
+  res.setHeader("x-request-id", requestId);
+  res.once("finish", () => {
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        level: "info",
+        msg: "http_request",
+        request_id: requestId,
+        method,
+        path,
+        status: res.statusCode,
+        duration_ms: Date.now() - t0,
+      }),
+    );
+  });
+}
+
 export function createServer(options: {
   pool: pg.Pool | null;
   webhookMaxBodyBytes: number;
@@ -53,11 +88,19 @@ export function createServer(options: {
   ghlAccessToken?: string | undefined;
   ghlLocationId?: string | undefined;
   aryeoCustomerProfileUrlTemplate?: string | undefined;
+  aryeoWebhookSecret?: string | undefined;
 }): http.Server {
   const server = http.createServer(async (req, res) => {
+    const requestId = readRequestId(req);
+    attachHttpRequestLog(req, res, requestId);
     const p = pathOnly(req.url ?? "");
 
-    if (req.method === "GET" && p === "/health") {
+    if (req.method === "GET" && p === "/health/live") {
+      json(res, 200, { ok: true, service: "fpm-datatool" });
+      return;
+    }
+
+    if (req.method === "GET" && (p === "/health" || p === "/health/ready")) {
       const body: HealthStatus = { ok: true, db: "skipped" };
       if (options.pool) {
         try {
@@ -84,6 +127,41 @@ export function createServer(options: {
     if (req.method === "GET" && p === "/admin") {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
       res.end(automationAdminHtml());
+      return;
+    }
+
+    if (req.method === "GET" && (p === "/dashboard" || p === "/monitor")) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(liveMonitorHtml());
+      return;
+    }
+
+    if (req.method === "GET" && (p === "/api/dashboard/feed" || p === "/api/monitor/feed")) {
+      if (!adminAuthorized(req, options.syncAdminToken)) {
+        json(res, 401, { error: "unauthorized" });
+        return;
+      }
+      try {
+        const q = new URL(req.url ?? "", "http://localhost").searchParams;
+        const limRaw = q.get("limit");
+        const limit = limRaw ? Number.parseInt(limRaw, 10) : 80;
+        const [snapshot, sync_events, orders] = await Promise.all([
+          getDashboardSnapshot(pool),
+          listRecentMonitorSyncEvents(pool, limit),
+          listRecentMonitorOrders(pool, limit),
+        ]);
+        json(res, 200, {
+          middleware: { db: "ok" as const },
+          refresh_interval_ms: DASHBOARD_POLL_MS,
+          metrics: snapshot.metrics,
+          automations: snapshot.automations,
+          sync_events,
+          orders,
+        });
+      } catch (err) {
+        console.error(err);
+        json(res, 500, { error: "internal_error" });
+      }
       return;
     }
 
@@ -157,7 +235,21 @@ export function createServer(options: {
           json(res, 200, { ok: true, skipped: "toggle_disabled" });
           return;
         }
-        const raw = await readJsonBody(req, options.webhookMaxBodyBytes);
+        const rawUtf8 = await readUtf8Body(req, options.webhookMaxBodyBytes);
+        const whSecret = options.aryeoWebhookSecret?.trim();
+        if (whSecret) {
+          if (!verifyAryeoWebhookSignature(rawUtf8, req.headers.signature, whSecret)) {
+            json(res, 401, { error: "invalid_signature" });
+            return;
+          }
+        }
+        let raw: unknown;
+        try {
+          raw = parseJsonFromUtf8(rawUtf8);
+        } catch {
+          json(res, 400, { error: "invalid_json" });
+          return;
+        }
         const outcome = await withTransaction(pool, (c) => ingestAryeoActivity(c, raw));
         if (outcome.handled) {
           const outbound: AryeoToGhlOutboundOptions = {

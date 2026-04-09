@@ -34,7 +34,7 @@ export function automationAdminHtml(): string {
     <button type="button" id="save">Save</button>
     <div id="msg" class="msg"></div>
   </div>
-  <p><a href="/health" style="color:#8ab4f8">/health</a></p>
+  <p><a href="/dashboard" style="color:#8ab4f8">Dashboard</a> · <a href="/health" style="color:#8ab4f8">/health</a></p>
   <script>
     const listEl = document.getElementById('list');
     const msgEl = document.getElementById('msg');

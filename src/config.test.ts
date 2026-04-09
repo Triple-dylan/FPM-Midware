@@ -20,6 +20,13 @@ describe("loadConfig", () => {
     expect(c.webhookMaxBodyBytes).toBe(512 * 1024);
     expect(c.syncAdminToken).toBeUndefined();
     expect(c.ghlAccessToken).toBeUndefined();
+    expect(c.aryeoApiKey).toBeUndefined();
+    expect(c.aryeoWebhookSecret).toBeUndefined();
+  });
+
+  it("reads ARYEO_WEBHOOK_SECRET", () => {
+    const c = loadConfig({ ARYEO_WEBHOOK_SECRET: " wh " });
+    expect(c.aryeoWebhookSecret).toBe("wh");
   });
 
   it("rejects invalid PORT", () => {

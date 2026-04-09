@@ -294,8 +294,8 @@
       "folder": "Transaction History",
       "object": "Contact",
       "mergeKeyRaw": "{{ contact.last_order_placed }}",
-      "definition": "The last order that was placed in Aryeo.",
-      "fieldNameInAryeo": "This data comes from Aryeo shoot data.",
+      "definition": "Calendar date (YYYY-MM-DD) of the newest Aryeo order for this contact in Postgres; updates on each order webhook (rolling).",
+      "fieldNameInAryeo": "Derived from orders.created_at (canonical DB).",
       "fieldNameInZendesk": "Field does not exist in Zendesk",
       "updateFrequency": ""
     },

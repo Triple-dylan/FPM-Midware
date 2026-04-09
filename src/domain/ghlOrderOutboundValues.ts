@@ -1,6 +1,10 @@
-import type { OrderOutboundContext } from "../db/repos/ordersRepo.js";
+import type {
+  LeadLatestOrderForOutbound,
+  OrderOutboundContext,
+} from "../db/repos/ordersRepo.js";
 
-function formatMoney(cents: number | null, currency: string | null): string | null {
+/** Formatted currency for GHL text / money custom fields (`total_amount` is cents). */
+export function formatMoneyCentsForGhl(cents: number | null, currency: string | null): string | null {
   if (cents == null || !Number.isFinite(cents)) return null;
   try {
     return new Intl.NumberFormat("en-US", {
@@ -30,40 +34,77 @@ export function formatAryeoCustomerProfileUrl(
   return `${t}/${customerId}`;
 }
 
+/** ISO date (YYYY-MM-DD) for GHL date / text fields — rolling “last order” from DB. */
+export function formatLastOrderDateYmd(d: Date | string | null | undefined): string | null {
+  if (d == null) return null;
+  const t = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(t.getTime())) return null;
+  return t.toISOString().slice(0, 10);
+}
+
+/** LTV / AOV / last shoot / whale / 1–3 shoot dates from Postgres order payloads (order push path). */
+export type LeadTransactionRollupForOutbound = {
+  lifetime_value: string | null;
+  average_order_value: string | null;
+  last_shoot_date: string | null;
+  whale: string | null;
+  "1st_shoot_appointment_date": string | null;
+  "2nd_shoot_appointment_date": string | null;
+  "3rd_shoot_appointment_date": string | null;
+};
+
 /**
- * Values we can set from a **single** Aryeo order ingest (no cross-order aggregates yet).
- * Aggregate fields (LTV, AOV, shoot dates) stay null until those jobs exist.
+ * Context for mapping Aryeo order → GHL custom fields after ingest.
+ * `latestForLead` is the **newest** order row for this lead in Postgres (rolling), so each
+ * webhook updates last order date/amount even when the ingested event is not the chronologically latest file replay.
+ * `transactionRollup` adds open+fulfilled LTV/AOV and last shoot date from all orders for the lead.
+ */
+export type OrderMapValueContext = {
+  order: OrderOutboundContext;
+  latestForLead: LeadLatestOrderForOutbound | null;
+  transactionRollup?: LeadTransactionRollupForOutbound | null;
+};
+
+/**
+ * Values pushed to GHL when `aryeo_push_order_summary_to_ghl` is enabled.
+ * Last-order fields use **rolling** aggregates from `orders` for the lead (`latestForLead`).
  */
 export function valueForOrderMapKey(
   mapKey: string,
-  order: OrderOutboundContext,
+  ctx: OrderMapValueContext,
   profileUrlTemplate: string,
 ): string | null {
+  const { order, latestForLead, transactionRollup } = ctx;
   const customerId = extractAryeoCustomerIdFromOrderPayload(order.raw_payload);
+
+  const amountCents = latestForLead?.total_amount ?? order.total_amount;
+  const currency = latestForLead?.currency ?? order.currency;
 
   switch (mapKey) {
     case "last_order_placed":
-      return (
-        order.aryeo_identifier ??
-        order.title ??
-        order.aryeo_order_id ??
-        null
-      );
+    case "last_order_date":
+      return formatLastOrderDateYmd(latestForLead?.created_at ?? null);
     case "last_order_amount":
-      return formatMoney(order.total_amount, order.currency);
+      return formatMoneyCentsForGhl(amountCents, currency);
     case "aryeo_customer_profile_link":
       if (!customerId) return null;
       return formatAryeoCustomerProfileUrl(profileUrlTemplate, customerId);
     case "type":
       return "Customer";
-    case "average_order_value":
     case "lifetime_value":
+      return transactionRollup?.lifetime_value ?? null;
+    case "average_order_value":
+      return transactionRollup?.average_order_value ?? null;
     case "last_shoot_date":
-    case "1st_shoot_appointment_date":
-    case "2nd_shoot_appointment_date":
-    case "3rd_shoot_appointment_date":
+      return transactionRollup?.last_shoot_date ?? null;
     case "whale_":
-      return null;
+      return transactionRollup?.whale ?? null;
+    case "1st_shoot_appointment_date":
+      return transactionRollup?.["1st_shoot_appointment_date"] ?? null;
+    case "2nd_shoot_appointment_date":
+      return transactionRollup?.["2nd_shoot_appointment_date"] ?? null;
+    case "3rd_shoot_appointment_date":
+      return transactionRollup?.["3rd_shoot_appointment_date"] ?? null;
     default:
       return null;
   }

@@ -14,11 +14,21 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "verify": "npm run build && npm test",
+    "db:local:bootstrap": "tsx scripts/bootstrap-local-postgres.ts",
+    "db:setup": "npm run db:local:bootstrap && npm run db:apply",
     "db:apply": "tsx scripts/apply-schema.ts",
     "import:ghl-fields": "tsx scripts/import-ghl-field-map.ts",
     "build:ghl-registry": "tsx scripts/build-ghl-contact-registry.ts",
     "seed:ghl-fields": "tsx scripts/seed-ghl-field-map-from-registry.ts",
-    "ghl:refresh-fields": "tsx scripts/ghl-refresh-custom-field-ids.ts"
+    "ghl:refresh-fields": "tsx scripts/ghl-refresh-custom-field-ids.ts",
+    "ghl:sync-from-db": "tsx scripts/sync-ghl-contacts-from-db.ts",
+    "aryeo:ping": "tsx scripts/aryeo-ping.ts",
+    "ghl:ping": "tsx scripts/ghl-ping.ts",
+    "bootstrap:aryeo-cohort": "tsx scripts/bootstrap-aryeo-cohort-to-ghl.ts",
+    "pilot:sync": "tsx scripts/pilot-sync-aryeo-to-ghl.ts",
+    "pilot": "npm run db:setup && npm run seed:ghl-fields && npm run ghl:refresh-fields && npm run pilot:sync",
+    "pilot:dry": "npm run db:setup && npm run seed:ghl-fields && npm run ghl:refresh-fields && npm run pilot:sync -- --dry-run",
+    "pilot:preview": "tsx scripts/pilot-sync-aryeo-to-ghl.ts --csv=pilot-preview.csv"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

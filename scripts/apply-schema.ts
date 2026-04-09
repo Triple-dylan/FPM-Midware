@@ -1,7 +1,10 @@
-import { execFileSync } from "node:child_process";
-import { readdirSync } from "node:fs";
+import "dotenv/config";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import pg from "pg";
+
+const { Client } = pg;
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const schemaPath = join(root, "schema", "schema.sql");
@@ -13,27 +16,33 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-function applyFile(filePath: string): void {
-  execFileSync(
-    "psql",
-    ["-d", databaseUrl, "-v", "ON_ERROR_STOP=1", "-f", filePath],
-    { stdio: "inherit", env: process.env },
-  );
+async function applyFile(client: pg.Client, filePath: string): Promise<void> {
+  const sql = readFileSync(filePath, "utf8");
+  await client.query(sql);
 }
 
-try {
-  applyFile(schemaPath);
-  let migrationFiles: string[] = [];
+async function main(): Promise<void> {
+  const client = new Client({ connectionString: databaseUrl });
+  await client.connect();
   try {
-    migrationFiles = readdirSync(migrationsDir)
-      .filter((f) => f.endsWith(".sql"))
-      .sort();
-  } catch {
-    /* no migrations directory */
+    await applyFile(client, schemaPath);
+    let migrationFiles: string[] = [];
+    try {
+      migrationFiles = readdirSync(migrationsDir)
+        .filter((f) => f.endsWith(".sql"))
+        .sort();
+    } catch {
+      /* no migrations directory */
+    }
+    for (const f of migrationFiles) {
+      await applyFile(client, join(migrationsDir, f));
+    }
+  } finally {
+    await client.end();
   }
-  for (const f of migrationFiles) {
-    applyFile(join(migrationsDir, f));
-  }
-} catch {
-  process.exit(1);
 }
+
+main().catch((e: unknown) => {
+  console.error(e);
+  process.exit(1);
+});

@@ -1,0 +1,43 @@
+﻿mapKey,ghl_label,fieldNameInAryeo
+1st_shoot_appointment_date,1st Shoot Appointment Date,This data comes from Aryeo shoot data.
+2nd_shoot_appointment_date,2nd Shoot Appointment Date,This data comes from Aryeo shoot data.
+3rd_shoot_appointment_date,3rd Shoot Appointment Date,This data comes from Aryeo shoot data.
+address1,"Address (Street address, city, state, postal code)",Field does not exist in Aryeo
+aryeo_customer_profile_link,Aryeo Customer Profile Link,This is just the generated Aryeo link
+average_order_value,Average Order Value,This data comes from Aryeo shoot data.
+business_name,Business Name,Field does not exist in Aryeo
+city,City,
+company_name,Business Name,
+country,Country,
+cre_type_of_client,CRE: Type of Client,Field does not exist in Aryeo
+customer_origin,Customer Origin,Field does not exist in Aryeo
+date_of_birth,Date Of Birth,Date Of Birth
+email,Email,Email address
+first_name,First Name,First name
+fpm_location,FPM Location,Field does not exist in Aryeo
+hb_annual_homes_photographed,HB: Annual Homes Photographed,Field does not exist in Aryeo
+hb_annual_model_homes_built,HB: Annual Model Homes Built,Field does not exist in Aryeo
+hb_annual_total_homes_built,HB: Annual Total Homes Built,Field does not exist in Aryeo
+hb_type_of_builder,HB: Type of Builder,Field does not exist in Aryeo
+i_agree_to_terms_conditions_and_privacy_policy_provided_by_the_company_by_providing_my_phone_number_i_agree_to_receive_text_messages_from_the_business,Consent Check Box,
+instagram_handle,Instagram Handle,Instagram profile link
+last_name,Last Name,Last name
+last_order_amount,Last Order Amount,
+last_order_placed,Last Order Placed,This data comes from Aryeo shoot data.
+last_shoot_date,Last Shoot Date,This data comes from Aryeo shoot data.
+license_number,RRE: License Number,Agent MLS / License Number
+lifetime_value,Life Time Value (LTV),This data comes from Aryeo shoot data.
+line_of_business,Line of Business,Field does not exist in Aryeo
+notes,Notes,Exists in Aryeo but should NOT be synced
+phone,Phone Number,Phone number
+postal_code,Postal Code,
+previous_media_company,Previous Media Company,Field does not exist in Aryeo
+rre_average_listing_price,RRE: Average Listing Price,Field does not exist in Aryeo
+rre_brokerage,RRE: Brokerage,Field does not exist in Aryeo
+rre_number_of_annual_listings,RRE: Number of Annual Listings,Field does not exist in Aryeo
+source,Contact Source,Field does not exist in Aryeo
+state,State,
+timezone,Timezone,Timezone
+type,Contact Type,Field does not exist in Aryeo
+website,Website,Field does not exist in Aryeo
+whale_,Whale? 🐳,

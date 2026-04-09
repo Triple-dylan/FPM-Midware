@@ -3,6 +3,8 @@ import {
   mergeDistinctTags,
   normalizeEmail,
   normalizePhoneE164,
+  normalizePhoneForGhl,
+  resolvePhoneForGhl,
   splitFullName,
 } from "./normalize.js";
 
@@ -24,6 +26,33 @@ describe("normalizePhoneE164", () => {
   it("returns null for junk", () => {
     expect(normalizePhoneE164("")).toBeNull();
     expect(normalizePhoneE164("abc")).toBeNull();
+  });
+});
+
+describe("normalizePhoneForGhl", () => {
+  it("strips extensions and normalizes US", () => {
+    expect(normalizePhoneForGhl("(713) 742-3086 ext 12")).toBe("+17137423086");
+    expect(normalizePhoneForGhl("713.742.3086 x99")).toBe("+17137423086");
+  });
+  it("takes first number when multiple", () => {
+    expect(normalizePhoneForGhl("7137423086; 2145550000")).toBe("+17137423086");
+  });
+  it("normalizes 10-digit US without +1", () => {
+    expect(normalizePhoneForGhl("2065550100")).toBe("+12065550100");
+  });
+  it("resolvePhoneForGhl prefers flat.phone then raw", () => {
+    expect(
+      resolvePhoneForGhl({
+        phone: "+12065550100",
+        phone_raw: "garbage",
+      }),
+    ).toBe("+12065550100");
+    expect(
+      resolvePhoneForGhl({
+        phone: null,
+        phone_raw: "(214) 555-0199",
+      }),
+    ).toBe("+12145550199");
   });
 });
 

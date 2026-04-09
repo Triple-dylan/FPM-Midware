@@ -10,8 +10,12 @@ export type AppConfig = {
   ghlLocationId: string | undefined;
   /** Aryeo REST base (read-only usage) */
   aryeoApiBaseUrl: string;
+  /** Aryeo API token (Bearer); used for REST reads / validation scripts */
+  aryeoApiKey: string | undefined;
   /** Placeholder `{{id}}` = Aryeo customer UUID from order payload */
   aryeoCustomerProfileUrlTemplate: string;
+  /** When set, `POST /webhooks/aryeo` requires valid `Signature` (HMAC-SHA256 hex of raw body). */
+  aryeoWebhookSecret: string | undefined;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -34,9 +38,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const ghlLocationId = env.GHL_LOCATION_ID?.trim() || undefined;
   const aryeoApiBaseUrl =
     env.ARYEO_API_BASE_URL?.trim() || "https://api.aryeo.com/v1";
+  const aryeoApiKey = env.ARYEO_API_KEY?.trim() || undefined;
   const aryeoCustomerProfileUrlTemplate =
     env.ARYEO_CUSTOMER_PROFILE_URL?.trim() ||
     "https://app.aryeo.com/customers/{{id}}";
+  const aryeoWebhookSecret = env.ARYEO_WEBHOOK_SECRET?.trim() || undefined;
 
   return {
     port,
@@ -46,6 +52,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     ghlAccessToken,
     ghlLocationId,
     aryeoApiBaseUrl,
+    aryeoApiKey,
     aryeoCustomerProfileUrlTemplate,
+    aryeoWebhookSecret,
   };
 }

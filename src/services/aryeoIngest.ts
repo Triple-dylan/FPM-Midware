@@ -17,7 +17,7 @@ import {
   normalizeCompanyName,
   normalizeEmail,
   normalizePersonNamePart,
-  normalizePhoneE164,
+  normalizePhoneForGhl,
   parseTimestamptz,
   splitFullName,
 } from "../lib/normalize.js";
@@ -58,7 +58,8 @@ const ORDER_NAMES = new Set([
   "ORDER_ATTACHED_TO_LISTING",
 ]);
 
-async function resolveLeadForAryeoCustomer(
+/** Exported for bootstrap / cohort scripts (same rules as webhook ingest). */
+export async function resolveLeadForAryeoCustomer(
   client: PoolClient,
   customerId: string | null,
   row: {
@@ -219,7 +220,7 @@ export async function ingestAryeoActivity(
       first_name: normalizePersonNamePart(sp.first),
       last_name: normalizePersonNamePart(sp.last),
       email: normalizeEmail(str(customer.email)),
-      phone: normalizePhoneE164(phoneRaw),
+      phone: normalizePhoneForGhl(phoneRaw),
       phone_raw: phoneRaw,
       company_name: normalizeCompanyName(str(customer.office_name)),
       license_number: normalizePersonNamePart(str(customer.license_number)),
@@ -340,4 +341,82 @@ export async function ingestAryeoActivity(
     orderUuid,
     leadId,
   };
+}
+
+/** Upsert order + line items from a REST ORDER object (`GET /orders`, webhook resource shape). */
+export async function upsertAryeoOrderFromRestResource(
+  client: PoolClient,
+  resource: Record<string, unknown>,
+  leadId: string | null,
+): Promise<string> {
+  const orderId = str(resource.id);
+  if (!orderId) {
+    throw new Error("aryeo order resource missing id");
+  }
+
+  const addr = isRecord(resource.address) ? resource.address : null;
+  const propertyAddress = addr ? { ...addr } : null;
+
+  const orderUuid = await upsertAryeoOrder(client, {
+    aryeoOrderId: orderId,
+    leadId,
+    aryeoIdentifier: str(resource.identifier),
+    title: str(resource.title),
+    orderStatus: str(resource.order_status) || str(resource.status),
+    fulfillmentStatus: str(resource.fulfillment_status),
+    paymentStatus: str(resource.payment_status),
+    totalAmount: typeof resource.total_amount === "number" ? resource.total_amount : null,
+    balanceAmount:
+      typeof resource.balance_amount === "number" ? resource.balance_amount : null,
+    totalTaxAmount:
+      typeof resource.total_tax_amount === "number" ? resource.total_tax_amount : null,
+    totalDiscountAmount:
+      typeof resource.total_discount_amount === "number"
+        ? resource.total_discount_amount
+        : null,
+    currency: str(resource.currency) ?? "USD",
+    propertyAddress,
+    internalNotes: str(resource.internal_notes),
+    tags: strArr(resource.tags),
+    fulfilledAt: parseTimestamptz(str(resource.fulfilled_at)),
+    createdAt: parseTimestamptz(str(resource.created_at)),
+    updatedAt: parseTimestamptz(str(resource.updated_at)),
+    rawPayload: resource,
+  });
+
+  const itemsRaw = resource.items;
+  const items: Array<{
+    aryeoItemId: string;
+    title: string | null;
+    purchasableType: string | null;
+    unitPriceAmount: number | null;
+    quantity: number | null;
+    grossTotalAmount: number | null;
+    isCanceled: boolean;
+    isServiceable: boolean | null;
+  }> = [];
+
+  if (Array.isArray(itemsRaw)) {
+    for (const it of itemsRaw) {
+      if (!isRecord(it)) continue;
+      const iid = str(it.id);
+      if (!iid) continue;
+      items.push({
+        aryeoItemId: iid,
+        title: str(it.title),
+        purchasableType: str(it.purchasable_type),
+        unitPriceAmount:
+          typeof it.unit_price_amount === "number" ? it.unit_price_amount : null,
+        quantity: typeof it.quantity === "number" ? it.quantity : null,
+        grossTotalAmount:
+          typeof it.gross_total_amount === "number" ? it.gross_total_amount : null,
+        isCanceled: Boolean(it.is_canceled),
+        isServiceable:
+          typeof it.is_serviceable === "boolean" ? it.is_serviceable : null,
+      });
+    }
+  }
+
+  await replaceOrderItems(client, orderUuid, items);
+  return orderUuid;
 }

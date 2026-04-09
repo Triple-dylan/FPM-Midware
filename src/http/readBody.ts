@@ -7,10 +7,11 @@ export class BodyTooLargeError extends Error {
   }
 }
 
-export async function readJsonBody(
+/** Full body as UTF-8 (for HMAC over exact bytes Aryeo sent). */
+export async function readUtf8Body(
   req: IncomingMessage,
   limitBytes: number,
-): Promise<unknown> {
+): Promise<string> {
   const chunks: Buffer[] = [];
   let size = 0;
 
@@ -23,7 +24,19 @@ export async function readJsonBody(
     chunks.push(buf);
   }
 
-  const raw = Buffer.concat(chunks).toString("utf8").trim();
-  if (!raw) return null;
-  return JSON.parse(raw) as unknown;
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+export function parseJsonFromUtf8(raw: string): unknown {
+  const t = raw.trim();
+  if (!t) return null;
+  return JSON.parse(t) as unknown;
+}
+
+export async function readJsonBody(
+  req: IncomingMessage,
+  limitBytes: number,
+): Promise<unknown> {
+  const raw = await readUtf8Body(req, limitBytes);
+  return parseJsonFromUtf8(raw);
 }

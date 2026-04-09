@@ -19,6 +19,128 @@ export type OrderOutboundContext = OrderSummaryRow & {
   raw_payload: unknown;
 };
 
+/** Latest order row for a lead (by `created_at`, then `updated_at`, then `aryeo_order_id`) — rolling GHL fields. */
+export type LeadLatestOrderForOutbound = {
+  created_at: Date | null;
+  total_amount: number | null;
+  currency: string | null;
+  aryeo_identifier: string | null;
+  title: string | null;
+};
+
+export async function fetchLeadLatestOrderForOutbound(
+  db: Db,
+  leadId: string,
+): Promise<LeadLatestOrderForOutbound | null> {
+  const r = await db.query<{
+    created_at: Date | null;
+    total_amount: number | null;
+    currency: string | null;
+    aryeo_identifier: string | null;
+    title: string | null;
+  }>(
+    `select created_at, total_amount, currency, aryeo_identifier, title
+     from orders
+     where lead_id = $1::uuid
+     order by created_at desc nulls last, updated_at desc nulls last, aryeo_order_id desc
+     limit 1`,
+    [leadId],
+  );
+  return r.rows[0] ?? null;
+}
+
+/** Sum LTV / AOV per GHL: orders with status Open + fulfillment Fulfilled (any payment status). */
+export type LeadOpenFulfilledRollup = {
+  ltv_cents: number;
+  qualifying_order_count: number;
+  currency: string;
+};
+
+export async function fetchLeadOpenFulfilledRollup(
+  db: Db,
+  leadId: string,
+): Promise<LeadOpenFulfilledRollup | null> {
+  const r = await db.query<{
+    ltv_cents: string;
+    qualifying_order_count: string;
+    currency: string | null;
+  }>(
+    `select coalesce(sum(total_amount), 0)::text as ltv_cents,
+            count(*)::text as qualifying_order_count,
+            max(currency) as currency
+     from orders
+     where lead_id = $1::uuid
+       and lower(trim(coalesce(order_status, ''))) = 'open'
+       and lower(trim(coalesce(fulfillment_status, ''))) = 'fulfilled'`,
+    [leadId],
+  );
+  const row = r.rows[0];
+  if (!row) return null;
+  const n = Number(row.qualifying_order_count);
+  if (!n || n === 0) return null;
+  return {
+    ltv_cents: Number(row.ltv_cents),
+    qualifying_order_count: n,
+    currency: row.currency?.trim() || "USD",
+  };
+}
+
+export async function fetchOrderRawPayloadsForLead(db: Db, leadId: string): Promise<unknown[]> {
+  const r = await db.query<{ raw_payload: unknown }>(
+    `select raw_payload from orders where lead_id = $1::uuid`,
+    [leadId],
+  );
+  return r.rows.map((x) => x.raw_payload);
+}
+
+/** Same payloads as stored orders, oldest first — for 1st/2nd/3rd shoot (one date per distinct order). */
+export async function fetchOrderRawPayloadsForLeadOrderByCreatedAtAsc(
+  db: Db,
+  leadId: string,
+): Promise<unknown[]> {
+  const r = await db.query<{ raw_payload: unknown }>(
+    `select raw_payload from orders
+     where lead_id = $1::uuid
+     order by created_at asc nulls last, aryeo_order_id asc`,
+    [leadId],
+  );
+  return r.rows.map((x) => x.raw_payload);
+}
+
+/** Placeholder row when a lead has no orders but GHL still needs rollup-only field resolution. */
+export function stubOrderOutboundContextForGhl(leadId: string): OrderOutboundContext {
+  const z = "00000000-0000-4000-8000-000000000000";
+  return {
+    id: z,
+    aryeo_order_id: z,
+    lead_id: leadId,
+    aryeo_identifier: null,
+    title: null,
+    order_status: null,
+    fulfillment_status: null,
+    payment_status: null,
+    currency: "USD",
+    total_amount: null,
+    raw_payload: {},
+  };
+}
+
+/** Internal `orders.id` for the newest row for this lead (same ordering as `fetchLeadLatestOrderForOutbound`). */
+export async function fetchLatestOrderInternalIdForLead(
+  db: Db,
+  leadId: string,
+): Promise<string | null> {
+  const r = await db.query<{ id: string }>(
+    `select id::text as id
+     from orders
+     where lead_id = $1::uuid
+     order by created_at desc nulls last, updated_at desc nulls last, aryeo_order_id desc
+     limit 1`,
+    [leadId],
+  );
+  return r.rows[0]?.id ?? null;
+}
+
 export async function fetchOrderSummaryById(
   db: Db,
   internalId: string,

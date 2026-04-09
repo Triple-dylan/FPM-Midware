@@ -40,6 +40,65 @@ export function normalizePhoneE164(
   return parsed?.format("E.164") ?? null;
 }
 
+/** Extension / second-number suffix (take first segment before this). */
+const PHONE_EXT_SUFFIX = /\s*(?:ext\.?|extension|x)\s*[\d.]+\s*$/i;
+
+function takeFirstPhoneCandidate(raw: string): string {
+  const first = raw.split(/[;|/]/u)[0]?.trim() ?? "";
+  return first.replace(PHONE_EXT_SUFFIX, "").trim();
+}
+
+const DIGITS_ONLY = /\D/g;
+
+/**
+ * Best-effort E.164 for GHL APIs (duplicate search, contact create). Handles messy CRM strings:
+ * extensions, multiple numbers, punctuation, US 10-digit without country code.
+ */
+export function normalizePhoneForGhl(
+  raw: string | null | undefined,
+  defaultCountry: CountryCode = "US",
+): string | null {
+  if (raw == null || !String(raw).trim()) return null;
+  const candidate = takeFirstPhoneCandidate(String(raw).trim());
+  if (!candidate) return null;
+
+  const direct = normalizePhoneE164(candidate, defaultCountry);
+  if (direct) return direct;
+
+  const digits = candidate.replace(DIGITS_ONLY, "");
+  if (digits.length < 10) return null;
+
+  if (digits.length === 10) {
+    const us = normalizePhoneE164(`+1${digits}`, defaultCountry);
+    if (us) return us;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    const us = normalizePhoneE164(`+${digits}`, defaultCountry);
+    if (us) return us;
+  }
+
+  const intl = parsePhoneNumberFromString(`+${digits}`, defaultCountry);
+  if (intl?.isValid()) {
+    return intl.format("E.164");
+  }
+  const intlLoose = parsePhoneNumberFromString(`+${digits}`);
+  if (intlLoose?.isValid()) {
+    return intlLoose.format("E.164");
+  }
+
+  return normalizePhoneE164(candidate.replace(/[().\s-]/g, " ").trim(), defaultCountry);
+}
+
+/** Prefer canonical `phone` (E.164); else derive from `phone_raw` for GHL + duplicate lookup. */
+export function resolvePhoneForGhl(flat: {
+  phone?: string | null;
+  phone_raw?: string | null;
+}): string | null {
+  const p = flat.phone?.trim();
+  if (p) return p;
+  return normalizePhoneForGhl(flat.phone_raw);
+}
+
 export function parseIsoDateOnly(raw: string | null | undefined): string | null {
   if (raw == null || typeof raw !== "string" || !raw.trim()) return null;
   const d = new Date(raw.trim());

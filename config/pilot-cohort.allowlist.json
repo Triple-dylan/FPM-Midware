@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "description": "Cohort = who the Aryeo GROUP is connected to (owner/users/customer_team_memberships emails and IDs), not fuzzy text on the client. First cohort in the list wins. Use matchEmailDomains / matchUserEmails / matchCustomerTeamIds / matchAryeoCustomerIds from the Aryeo UI. Optional needles[] is legacy substring OR.",
+  "exclusive": true,
+  "globalTags": ["Pilot-Aryeo-Sync"],
+  "cohorts": [
+    {
+      "id": "jamie_mcmartin_group",
+      "teamTag": "Team: Jamie McMartin Group",
+      "matchEmailDomains": ["thejamiemcmartingroup.com"]
+    },
+    {
+      "id": "empower_homes",
+      "teamTag": "Team: Empower Homes",
+      "matchEmailDomains": ["empowerhome.com"]
+    },
+    {
+      "id": "lisa_falco",
+      "teamTag": "Team: Lisa Falco",
+      "matchUserEmails": ["lisa.falco@compass.com"]
+    },
+    {
+      "id": "aspire_homes",
+      "teamTag": "Team: Aspire Homes",
+      "matchEmailDomains": ["aspirefinehomes.com"]
+    },
+    {
+      "id": "hann_custom_homes",
+      "teamTag": "Team: Hann Custom Homes",
+      "matchUserEmails": ["hanncustom@gmail.com"]
+    },
+    {
+      "id": "marc_zachrau",
+      "teamTag": "Team: Marc Zachrau",
+      "matchUserEmails": ["marc.zachrau@compass.com"]
+    }
+  ]
+}
