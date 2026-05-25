@@ -33,6 +33,7 @@ export type AryeoIngestOutcome =
       aryeoOrderId: string;
       orderUuid: string;
       leadId: string | null;
+      leadCreated: boolean;
     };
 
 function isRecord(x: unknown): x is Record<string, unknown> {
@@ -46,6 +47,30 @@ function str(x: unknown): string | null {
 function strArr(x: unknown): string[] {
   if (!Array.isArray(x)) return [];
   return x.filter((v): v is string => typeof v === "string");
+}
+
+/** Parse a raw Aryeo customer object into the normalized row shape used for lead matching/creation. */
+export function parseAryeoCustomerRow(customer: Record<string, unknown>): {
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  phone_raw: string | null;
+  company_name: string | null;
+  license_number: string | null;
+} {
+  const custName = str(customer.name);
+  const sp = splitFullName(custName);
+  const phoneRaw = str(customer.phone);
+  return {
+    first_name: normalizePersonNamePart(sp.first),
+    last_name: normalizePersonNamePart(sp.last),
+    email: normalizeEmail(str(customer.email)),
+    phone: normalizePhoneForGhl(phoneRaw),
+    phone_raw: phoneRaw,
+    company_name: normalizeCompanyName(str(customer.office_name)),
+    license_number: normalizePersonNamePart(str(customer.license_number)),
+  };
 }
 
 const ORDER_NAMES = new Set([
@@ -210,28 +235,19 @@ export async function ingestAryeoActivity(
 
   const customer = isRecord(resource.customer) ? resource.customer : null;
   let leadId: string | null = null;
+  let leadCreated = false;
 
   if (customer) {
     const customerUuid = str(customer.id);
-    const custName = str(customer.name);
-    const sp = splitFullName(custName);
-    const phoneRaw = str(customer.phone);
-    const row = {
-      first_name: normalizePersonNamePart(sp.first),
-      last_name: normalizePersonNamePart(sp.last),
-      email: normalizeEmail(str(customer.email)),
-      phone: normalizePhoneForGhl(phoneRaw),
-      phone_raw: phoneRaw,
-      company_name: normalizeCompanyName(str(customer.office_name)),
-      license_number: normalizePersonNamePart(str(customer.license_number)),
-    };
+    const row = parseAryeoCustomerRow(customer);
 
-    const { leadId: lid } = await resolveLeadForAryeoCustomer(
+    const { leadId: lid, created } = await resolveLeadForAryeoCustomer(
       client,
       customerUuid,
       row,
     );
     leadId = lid;
+    leadCreated = created;
     if (customerUuid) {
       const conflict = await upsertLeadExternalId(
         client,
@@ -340,6 +356,7 @@ export async function ingestAryeoActivity(
     aryeoOrderId: orderId,
     orderUuid,
     leadId,
+    leadCreated,
   };
 }
 

@@ -9,6 +9,7 @@ import {
 import { checkDb } from "../db/pool.js";
 import { withTransaction } from "../db/transaction.js";
 import { ingestAryeoActivity } from "../services/aryeoIngest.js";
+import { findOrCreateGhlContactForLead } from "../services/ghlContactCreate.js";
 import {
   runAryeoOrderOutboundToGhl,
   type AryeoToGhlOutboundOptions,
@@ -155,8 +156,98 @@ export function createServer(options: {
           refresh_interval_ms: DASHBOARD_POLL_MS,
           metrics: snapshot.metrics,
           automations: snapshot.automations,
+          monthly_trend: snapshot.monthly_trend,
+          top_customers: snapshot.top_customers,
+          order_status_counts: snapshot.order_status_counts,
+          leads: snapshot.leads,
           sync_events,
           orders,
+        });
+      } catch (err) {
+        console.error(err);
+        json(res, 500, { error: "internal_error" });
+      }
+      return;
+    }
+
+    // PUT /api/leads/:id/commission  { commission_tracked: boolean }
+    const leadCommMatch = /^\/api\/leads\/([^/]+)\/commission$/.exec(p);
+    if (leadCommMatch && req.method === "PUT") {
+      if (!adminAuthorized(req, options.syncAdminToken)) {
+        json(res, 401, { error: "unauthorized" });
+        return;
+      }
+      try {
+        const leadId = leadCommMatch[1];
+        const body = await readJsonBody(req, options.webhookMaxBodyBytes);
+        if (!isRecord(body) || typeof body.commission_tracked !== "boolean") {
+          json(res, 400, { error: "expected { commission_tracked: boolean }" });
+          return;
+        }
+        const r = await pool.query(
+          `update leads set commission_tracked = $1 where id = $2::uuid returning id`,
+          [body.commission_tracked, leadId],
+        );
+        if (r.rowCount === 0) {
+          json(res, 404, { error: "lead_not_found" });
+          return;
+        }
+        json(res, 200, { ok: true, id: leadId, commission_tracked: body.commission_tracked });
+      } catch (err) {
+        if (err instanceof SyntaxError) { json(res, 400, { error: "invalid_json" }); return; }
+        if (err instanceof BodyTooLargeError) { json(res, 413, { error: "payload_too_large" }); return; }
+        console.error(err);
+        json(res, 500, { error: "internal_error" });
+      }
+      return;
+    }
+
+    // GET /api/leads/search?q=...&limit=20
+    if (req.method === "GET" && p === "/api/leads/search") {
+      if (!adminAuthorized(req, options.syncAdminToken)) {
+        json(res, 401, { error: "unauthorized" });
+        return;
+      }
+      try {
+        const q = new URL(req.url ?? "", "http://localhost").searchParams;
+        const search = (q.get("q") ?? "").trim();
+        const limit = Math.min(Number.parseInt(q.get("limit") ?? "20", 10) || 20, 50);
+        const rows = await pool.query<{
+          id: string;
+          name: string;
+          email: string | null;
+          orders: string;
+          value_cents: string;
+          commission_tracked: boolean;
+        }>(
+          `select l.id::text,
+                  coalesce(nullif(trim(l.first_name || ' ' || l.last_name), ''), l.email, 'Unknown') as name,
+                  l.email,
+                  l.commission_tracked,
+                  count(o.id)::text as orders,
+                  coalesce(sum(o.total_amount) filter (where o.order_status != 'CANCELED'), 0)::text as value_cents
+           from leads l
+           left join orders o on o.lead_id = l.id
+           where l.is_deleted = false
+             and (
+               $1 = '' or
+               lower(coalesce(l.first_name,'') || ' ' || coalesce(l.last_name,'')) like '%' || lower($1) || '%' or
+               lower(coalesce(l.email,'')) like '%' || lower($1) || '%'
+             )
+           group by l.id
+           order by l.commission_tracked desc, value_cents::numeric desc, name asc
+           limit $2`,
+          [search, limit],
+        );
+        json(res, 200, {
+          leads: rows.rows.map((r) => ({
+            id: r.id,
+            name: r.name,
+            email: r.email,
+            orders: Number(r.orders),
+            value_cents: Number(r.value_cents),
+            commission_tracked: r.commission_tracked,
+          })),
         });
       } catch (err) {
         console.error(err);
@@ -259,9 +350,14 @@ export function createServer(options: {
               options.aryeoCustomerProfileUrlTemplate ??
               "https://app.aryeo.com/customers/{{id}}",
           };
-          void runAryeoOrderOutboundToGhl(pool, outbound, outcome).catch((e) =>
-            console.error("aryeo→ghl outbound", e),
-          );
+          void (async () => {
+            // If this webhook created a brand-new lead, ensure a GHL contact
+            // exists before pushing order summary fields.
+            if (outcome.leadCreated && outcome.leadId) {
+              await findOrCreateGhlContactForLead(pool, outbound, outcome.leadId);
+            }
+            await runAryeoOrderOutboundToGhl(pool, outbound, outcome);
+          })().catch((e) => console.error("aryeo→ghl outbound", e));
         }
         json(res, 200, { ok: true });
         return;

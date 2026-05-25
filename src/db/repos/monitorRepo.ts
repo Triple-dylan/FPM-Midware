@@ -19,8 +19,10 @@ export type MonitorOrderRow = {
   aryeo_identifier: string | null;
   order_status: string | null;
   fulfillment_status: string | null;
+  total_amount: number | null;
   lead_id: string | null;
   lead_email: string | null;
+  created_at: string | null;
   synced_at: string | null;
 };
 
@@ -64,21 +66,24 @@ export async function listRecentMonitorOrders(db: Db, limit: number): Promise<Mo
     aryeo_identifier: string | null;
     order_status: string | null;
     fulfillment_status: string | null;
+    total_amount: number | null;
     lead_id: string | null;
     lead_email: string | null;
+    created_at: Date | null;
     synced_at: Date | null;
   }>(
     `select o.id::text as id, o.aryeo_order_id::text, o.aryeo_identifier, o.order_status, o.fulfillment_status,
-            o.lead_id::text as lead_id, l.email::text as lead_email, o.synced_at
+            o.total_amount, o.lead_id::text as lead_id, l.email::text as lead_email, o.created_at, o.synced_at
      from orders o
      left join leads l on l.id = o.lead_id
      where o.lead_id is not null
-     order by o.synced_at desc nulls last, o.updated_at desc nulls last
+     order by o.created_at desc nulls last
      limit $1`,
     [lim],
   );
   return r.rows.map((row) => ({
     ...row,
+    created_at: row.created_at ? row.created_at.toISOString() : null,
     synced_at: row.synced_at ? row.synced_at.toISOString() : null,
   }));
 }

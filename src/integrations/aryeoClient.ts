@@ -112,8 +112,12 @@ function isRecord(x: unknown): x is Record<string, unknown> {
 }
 
 /**
- * All ORDER rows for a customer: tries `GET /orders?customer_id=` pages first, then scans
- * group-wide `/orders` pages and filters by `customer.id` (fallback when the filter route is unavailable).
+ * All ORDER rows for a customer: scans group-wide `/orders?include=customer` pages and
+ * filters client-side by `order.customer.id`. The `customer_id` query param is not honoured
+ * by the Aryeo API and is intentionally not used here.
+ *
+ * Aryeo caps per_page at 100 regardless of what is requested; pagination is driven by
+ * `meta.last_page` in the envelope.
  */
 export async function fetchOrderObjectsForAryeoCustomer(
   apiKey: string,
@@ -121,38 +125,15 @@ export async function fetchOrderObjectsForAryeoCustomer(
   baseUrl?: string,
   options?: { maxPages?: number },
 ): Promise<unknown[]> {
-  const maxPages = options?.maxPages ?? 60;
+  const maxPages = options?.maxPages ?? 500;
+  const cid = customerId.trim().toLowerCase();
   const out: unknown[] = [];
 
   for (let page = 1; page <= maxPages; page++) {
-    const r = await listAryeoOrdersForCustomerPage(apiKey, customerId, page, baseUrl);
-    if (!r.ok) {
-      break;
-    }
+    const r = await listAryeoOrdersPage(apiKey, page, baseUrl, { perPage: 100 });
+    if (!r.ok) break;
     const rows = aryeoParseDataArray(r.data);
-    if (rows.length === 0) {
-      break;
-    }
-    out.push(...rows);
-    if (rows.length < 50) {
-      break;
-    }
-  }
-
-  if (out.length > 0) {
-    return out;
-  }
-
-  const cid = customerId.trim().toLowerCase();
-  for (let page = 1; page <= maxPages; page++) {
-    const r = await listAryeoOrdersPage(apiKey, page, baseUrl, { perPage: 250 });
-    if (!r.ok) {
-      break;
-    }
-    const rows = aryeoParseDataArray(r.data);
-    if (rows.length === 0) {
-      break;
-    }
+    if (rows.length === 0) break;
     for (const row of rows) {
       if (!isRecord(row)) continue;
       const c = row.customer;
@@ -160,9 +141,10 @@ export async function fetchOrderObjectsForAryeoCustomer(
         out.push(row);
       }
     }
-    if (rows.length < 250) {
-      break;
-    }
+    // Use meta.last_page when available; fall back to checking if this was a short page
+    const meta = isRecord(r.data) ? r.data.meta : null;
+    const lastPage = isRecord(meta) && typeof meta.last_page === "number" ? meta.last_page : null;
+    if (lastPage !== null ? page >= lastPage : rows.length < 100) break;
   }
   return out;
 }

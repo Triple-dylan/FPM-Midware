@@ -76,8 +76,9 @@ export async function insertLeadAryeoCustomer(
 ): Promise<string> {
   const r = await client.query<{ id: string }>(
     `insert into leads (
-       first_name, last_name, email, phone, phone_raw, company_name, license_number, tags, dnd
-     ) values ($1,$2,$3,$4,$5,$6,$7,'{}', false)
+       first_name, last_name, email, phone, phone_raw, company_name, license_number,
+       tags, dnd, commission_tracked
+     ) values ($1,$2,$3,$4,$5,$6,$7,'{}', false, false)
      returning id`,
     [
       row.first_name,
