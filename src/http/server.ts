@@ -11,6 +11,7 @@ import { withTransaction } from "../db/transaction.js";
 import { ingestAryeoActivity } from "../services/aryeoIngest.js";
 import { findOrCreateGhlContactForLead } from "../services/ghlContactCreate.js";
 import {
+  pushOrderSummaryToGhl,
   runAryeoOrderOutboundToGhl,
   type AryeoToGhlOutboundOptions,
 } from "../services/aryeoToGhlOutbound.js";
@@ -296,6 +297,70 @@ export function createServer(options: {
         json(res, 500, { error: "internal_error" });
         return;
       }
+    }
+
+    // POST /api/admin/ghl/sync-commission
+    // One-shot: links existing GHL contacts to leads (by email/phone search) and pushes
+    // order summaries for every commission_tracked=true lead. Safe to run repeatedly.
+    if (req.method === "POST" && p === "/api/admin/ghl/sync-commission") {
+      if (!adminAuthorized(req, options.syncAdminToken)) {
+        json(res, 401, { error: "unauthorized" });
+        return;
+      }
+      try {
+        const outbound: AryeoToGhlOutboundOptions = {
+          ghlAccessToken: options.ghlAccessToken,
+          ghlLocationId: options.ghlLocationId,
+          aryeoCustomerProfileUrlTemplate:
+            options.aryeoCustomerProfileUrlTemplate ?? "https://app.aryeo.com/customers/{{id}}",
+        };
+        const leadsResult = await pool.query<{ id: string; has_ghl_link: boolean }>(
+          `select l.id,
+                  exists(
+                    select 1 from lead_external_ids lei
+                    where lei.lead_id = l.id and lei.system = 'ghl'
+                  ) as has_ghl_link
+           from leads l
+           where l.commission_tracked = true and l.is_deleted = false`,
+        );
+        let linked = 0, alreadyLinked = 0, linkFailed = 0, pushed = 0, pushFailed = 0;
+        for (const lead of leadsResult.rows) {
+          if (!lead.has_ghl_link) {
+            const r = await findOrCreateGhlContactForLead(pool, outbound, lead.id);
+            if (!r.ok) { linkFailed++; continue; }
+            linked++;
+          } else {
+            alreadyLinked++;
+          }
+          const latestOrd = await pool.query<{ id: string }>(
+            `select id from orders where lead_id = $1 and order_status != 'CANCELED'
+             order by created_at desc nulls last limit 1`,
+            [lead.id],
+          );
+          if (!latestOrd.rows[0]) continue;
+          const ok = await pushOrderSummaryToGhl(pool, outbound, {
+            leadId: lead.id,
+            orderInternalId: latestOrd.rows[0].id,
+            eventType: "ghl_commission_sync",
+            externalId: lead.id,
+            requireAutomationToggle: false,
+          });
+          if (ok) pushed++; else pushFailed++;
+        }
+        json(res, 200, {
+          ok: true,
+          total: leadsResult.rows.length,
+          linked,
+          already_linked: alreadyLinked,
+          link_failed: linkFailed,
+          pushed,
+          push_failed: pushFailed,
+        });
+      } catch (err) {
+        console.error(err);
+        json(res, 500, { error: "internal_error" });
+      }
+      return;
     }
 
     try {

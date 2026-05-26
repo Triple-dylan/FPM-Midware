@@ -9,9 +9,10 @@
 import type pg from "pg";
 import { aryeoGetJson, aryeoParseDataArray } from "../integrations/aryeoClient.js";
 import { withTransaction } from "../db/transaction.js";
-import { upsertLeadExternalId } from "../db/repos/externalIdsRepo.js";
+import { getExternalIdForLead, upsertLeadExternalId } from "../db/repos/externalIdsRepo.js";
 import { fetchLatestOrderInternalIdForLead } from "../db/repos/ordersRepo.js";
 import { parseAryeoCustomerRow, resolveLeadForAryeoCustomer, upsertAryeoOrderFromRestResource } from "./aryeoIngest.js";
+import { findOrCreateGhlContactForLead } from "./ghlContactCreate.js";
 import { pushOrderSummaryToGhl, type AryeoToGhlOutboundOptions } from "./aryeoToGhlOutbound.js";
 
 // Aryeo customer IDs to never include in syncs or commission metrics.
@@ -143,11 +144,23 @@ export async function runPeriodicAryeoRefresh(
     if (lastPage !== null ? page >= lastPage : rows.length < 100) break;
   }
 
-  // Push GHL summaries for leads that already have a GHL contact linked.
-  // New leads without a GHL contact get one created lazily when their next
-  // order arrives via webhook — no bulk GHL API calls here.
+  // For commission_tracked leads: ensure GHL contact is linked, then push order summary.
+  // For all other updated leads: push only if a GHL link already exists.
+  const commissionTrackedResult = await pool.query<{ id: string }>(
+    `select id from leads where commission_tracked = true and is_deleted = false`,
+  );
+  const commissionTrackedIds = new Set(commissionTrackedResult.rows.map((r) => r.id));
+
   for (const leadId of updatedLeads) {
     try {
+      // Commission-tracked leads: ensure GHL contact exists (find or create)
+      if (commissionTrackedIds.has(leadId)) {
+        const existing = await getExternalIdForLead(pool, leadId, "ghl");
+        if (!existing) {
+          await findOrCreateGhlContactForLead(pool, ghlOpts, leadId);
+        }
+      }
+
       const latestOrderId = await fetchLatestOrderInternalIdForLead(pool, leadId);
       if (latestOrderId) {
         await pushOrderSummaryToGhl(pool, ghlOpts, {
